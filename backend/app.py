@@ -3,23 +3,23 @@ import uuid
 from dotenv import load_dotenv
 import threading
 import time
-from flask import Flask, request, jsonify, g
+from flask import Flask, request, jsonify
 from flask_cors import CORS
-from utils import SentimentAnalyzer, fetch_comments_from_api, extract_video_id
+from backend.utils import SentimentAnalyzer, fetch_comments_from_api, extract_video_id
 
-
-# Load environment variables from .env file
+# Load environment variables from .env file (if present)
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
+# Initialize the model once (loaded at startup)
 analyzer = SentimentAnalyzer()
 
-
+# YouTube API key from environment (set as secret on Hugging Face)
 YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
 
-
+# In-memory job storage (for demo; use Redis in production)
 jobs = {}
 
 def background_worker(job_id, video_id):
@@ -28,7 +28,6 @@ def background_worker(job_id, video_id):
     jobs[job_id]['message'] = 'Fetching comments...'
     jobs[job_id]['fetched'] = 0
 
-    # Fetch comments (including replies)
     comments, warning = fetch_comments_from_api(video_id, YOUTUBE_API_KEY, max_results=500)
     jobs[job_id]['fetched'] = len(comments)
 
@@ -42,7 +41,6 @@ def background_worker(job_id, video_id):
     jobs[job_id]['total'] = len(comments)
     jobs[job_id]['processed'] = 0
 
-    # Analyze in batches, update progress
     batch_size = 32
     sentiments = []
     for i in range(0, len(comments), batch_size):
@@ -50,9 +48,7 @@ def background_worker(job_id, video_id):
         batch_sentiments = analyzer.predict_batch(batch)
         sentiments.extend(batch_sentiments)
         jobs[job_id]['processed'] = min(i + batch_size, len(comments))
-        # Optionally update counts incrementally, but we'll just show processed count
 
-    # Count sentiments
     results = {'positive': 0, 'neutral': 0, 'negative': 0}
     for s in sentiments:
         results[s.lower()] += 1
@@ -75,7 +71,6 @@ def analyze_video():
     if not video_id:
         return jsonify({'error': 'Invalid or missing video ID/URL'}), 400
 
-    # Create a new job
     job_id = str(uuid.uuid4())
     jobs[job_id] = {
         'id': job_id,
@@ -85,7 +80,6 @@ def analyze_video():
         'created_at': time.time()
     }
 
-    # Start background thread
     thread = threading.Thread(target=background_worker, args=(job_id, video_id))
     thread.daemon = True
     thread.start()
@@ -98,7 +92,6 @@ def get_job_status(job_id):
     if not job:
         return jsonify({'error': 'Job not found'}), 404
 
-    # Return relevant fields based on status
     response = {
         'job_id': job_id,
         'status': job['status'],
@@ -119,4 +112,6 @@ def get_job_status(job_id):
     return jsonify(response)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
+    # This block is only used when running locally.
+    port = int(os.getenv('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False, threaded=True)

@@ -4,7 +4,10 @@
   "version": "1.0.0",
   "description": "Analyzes sentiment of YouTube video comments using a custom AI model.",
   "permissions": ["activeTab", "scripting"],
-  "host_permissions": ["https://www.youtube.com/*"],
+  "host_permissions": [
+    "https://www.youtube.com/*",
+    "https://zoro828-yt-sentiment-analysis.hf.space/*"
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {

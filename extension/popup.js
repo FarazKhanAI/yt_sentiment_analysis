@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const errorEl = document.getElementById('error');
   const warningEl = document.getElementById('warning');
   const refreshBtn = document.getElementById('refresh');
-  const statusEl = document.getElementById('status'); // new status element
+  const statusEl = document.getElementById('status');
 
   async function analyzeCurrentVideo() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Get video ID from content script
     chrome.tabs.sendMessage(tab.id, { action: 'getVideoId' }, async (response) => {
       if (chrome.runtime.lastError) {
         showError('Cannot communicate with page. Try refreshing the video page.');
@@ -29,7 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // Try to get video title
       chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: () => document.querySelector('h1 yt-formatted-string')?.innerText.trim() || 'YouTube Video'
@@ -39,7 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
 
-      // Start analysis and get job ID
       chrome.runtime.sendMessage({ action: 'analyze', videoId }, (result) => {
         if (result.error) {
           showError(`API Error: ${result.error}`);
@@ -50,10 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
         statusEl.classList.remove('hidden');
         statusEl.textContent = 'Starting analysis...';
 
-        // Poll for job status
         pollJobStatus(jobId, 
           (status) => {
-            // Update progress
             if (status.status === 'fetching') {
               statusEl.textContent = `Fetching comments... (${status.fetched || 0} so far)`;
             } else if (status.status === 'analyzing') {
@@ -61,7 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           },
           (finalStatus) => {
-            // Complete
             statusEl.classList.add('hidden');
             if (finalStatus.warning) {
               warningEl.textContent = finalStatus.warning;
@@ -105,10 +99,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// Polling function (could be placed in background, but here for simplicity)
+// Polling function – now uses the same base URL
 function pollJobStatus(jobId, onUpdate, onComplete, onError) {
+  const API_BASE = 'https://zoro828-yt-sentiment-analysis.hf.space';
   const poll = () => {
-    fetch(`http://localhost:5000/job/${jobId}`)
+    fetch(`${API_BASE}/job/${jobId}`)
       .then(response => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
@@ -126,4 +121,4 @@ function pollJobStatus(jobId, onUpdate, onComplete, onError) {
       .catch(err => onError(err.message));
   };
   poll();
-}
+} 

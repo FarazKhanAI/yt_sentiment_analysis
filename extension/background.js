@@ -1,7 +1,9 @@
 // background.js
+const API_BASE = 'https://zoro828-yt-sentiment-analysis.hf.space';
+
 async function startAnalysis(videoId) {
   try {
-    const response = await fetch('http://localhost:5000/analyze_video', {
+    const response = await fetch(`${API_BASE}/analyze_video`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ video_id: videoId })
@@ -21,7 +23,7 @@ async function startAnalysis(videoId) {
 async function pollJobStatus(jobId, onUpdate, onComplete, onError) {
   const poll = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/job/${jobId}`);
+      const response = await fetch(`${API_BASE}/job/${jobId}`);
       if (!response.ok) {
         const err = await response.text();
         throw new Error(`Poll error: ${err}`);
