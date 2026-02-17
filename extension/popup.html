@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>YouTube Sentiment</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h2>YouTube Comment Sentiment</h2>
+    <div id="videoTitle" class="video-title">YouTube Video</div>
+    <div id="status" class="status hidden">Starting...</div>
+    <div class="stats" id="stats">
+      <div class="stat-card positive">
+        <span class="label">Positive</span>
+        <span class="count" id="positive">0</span>
+      </div>
+      <div class="stat-card neutral">
+        <span class="label">Neutral</span>
+        <span class="count" id="neutral">0</span>
+      </div>
+      <div class="stat-card negative">
+        <span class="label">Negative</span>
+        <span class="count" id="negative">0</span>
+      </div>
+    </div>
+    <div id="total" class="total">Total Comments: 0</div>
+    <div id="error" class="error hidden"></div>
+    <div id="warning" class="warning hidden"></div>
+    <button id="refresh">Refresh Analysis</button>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
